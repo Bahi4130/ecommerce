@@ -49,6 +49,7 @@ def remove_cart_item(request, product_id):
 
     return redirect('cart')
 
+
 def cart(request, total_price=0, quantity=0, cart_items=None):
     try:
         user_cart = Cart.objects.get(cart_id=_get_cart_id(request))
