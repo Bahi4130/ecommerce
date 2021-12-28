@@ -1,4 +1,5 @@
 from django.core.paginator import Paginator
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404
 
@@ -9,7 +10,7 @@ from store.models import Product
 
 
 def store(request, category_slug=None):
-    categories = None
+    categories = None  # ToDo: This have no usage here...?
     products = None
 
     if category_slug is not None:
@@ -38,3 +39,14 @@ def product_detail(request, category_slug, product_slug):
     context = {'single_product': single_product, 'in_cart': in_cart}
 
     return render(request, 'store/product_detail.html', context=context)
+
+
+def search(request):
+    if 'keyword' in request.GET:  # ToDo: This is not a nice code....use := operator and dict.get() method instead
+        keyword = request.GET['keyword']
+        if keyword:  # ToDo: Add else condition to filter all products case of empty string search (now it raises an error)
+            products = Product.objects.filter(Q(slug__icontains=keyword) | Q(product_name=keyword), is_available=True, ).order_by('-id')
+
+    context = {'products': products}
+    return render(request, 'store/store.html', context=context)
+
