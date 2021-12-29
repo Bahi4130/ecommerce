@@ -1,7 +1,8 @@
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
 from cart.models import Cart, CartItem
-from store.models import Product
+from store.models import Product, Variation
 
 
 def _get_cart_id(request):
@@ -13,17 +14,35 @@ def _get_cart_id(request):
 
 def add_to_cart(request, product_id):
     product = Product.objects.get(pk=product_id)
+    product_variations = []
+    if request.method == 'POST':
+        for item in request.POST:
+            key = item
+            value = request.POST[key]
+            try:
+                variation = Variation.objects.get(product=product, variation_category__iexact=key, variation_value__iexact=value)
+                product_variations.append(variation)
+            except Variation.DoesNotExist:
+                pass
+
     try:
         user_cart = Cart.objects.get(cart_id=_get_cart_id(request))
     except Cart.DoesNotExist:
         user_cart = Cart.objects.create(cart_id=_get_cart_id(request))
 
     try:
-        cart_item = CartItem.objects.get(product=product)
+        cart_item = CartItem.objects.get(product=product, cart=user_cart)
+        if len(product_variations) > 0:  # ToDo: This is ugly, use 'if product_variations'.
+            for item in product_variations:
+                cart_item.variations.add(item)
         cart_item.quantity += 1
         cart_item.save()
     except CartItem.DoesNotExist:
-        CartItem.objects.create(product=product, quantity=1, cart=user_cart)
+        cart_item = CartItem.objects.create(product=product, quantity=1, cart=user_cart)
+        if len(product_variations) > 0:  # ToDo: This is ugly, use 'if product_variations'.
+            for item in product_variations:
+                cart_item.variations.add(item)
+        cart_item.save()
 
     return redirect('cart')
 
