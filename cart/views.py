@@ -30,40 +30,58 @@ def add_to_cart(request, product_id):
     except Cart.DoesNotExist:
         user_cart = Cart.objects.create(cart_id=_get_cart_id(request))
 
-    try:
-        cart_item = CartItem.objects.get(product=product, cart=user_cart)
-        if len(product_variations) > 0:  # ToDo: This is ugly, use 'if product_variations'.
-            for item in product_variations:
-                cart_item.variations.add(item)
-        cart_item.quantity += 1
-        cart_item.save()
-    except CartItem.DoesNotExist:
+    cart_item_exists = CartItem.objects.filter(product=product, cart=user_cart).exists()
+    if cart_item_exists:  # ToDo: Use := operator and instead of checking that cart_item exists, use filter() and fetch the queryset directly
+        cart_item = CartItem.objects.filter(product=product, cart=user_cart)
+        existing_variation_list = []
+        id = []  # ToDo: Rename the variable as this one shadows the built-in one.
+        for item in cart_item:
+            existing_variation = item.variations.all()
+            existing_variation_list.append(list(existing_variation))  # ToDo: Convert queryset to list while getting the existing_variation
+            id.append(item.id)  # ToDo: Use values_list() to get ids from cart_item queryset.
+
+        if product_variations in existing_variation_list:
+            index = existing_variation_list.index(product_variations)  # ToDo: Use enumarate() instead of this.
+            item_id = id[index]
+            item = CartItem.objects.get(product=product, id=item_id)
+            item.quantity += 1
+            item.save()
+        else:
+            item = CartItem.objects.create(product=product, quantity=1, cart=user_cart)
+            if len(product_variations) > 0:  # ToDo: This is ugly, use 'if product_variations'.
+                item.variations.clear()
+                item.variations.add(*product_variations)
+            item.save()  # ToDo: Remove save() as create() and clear() apply db changes immediately.
+    else:
         cart_item = CartItem.objects.create(product=product, quantity=1, cart=user_cart)
         if len(product_variations) > 0:  # ToDo: This is ugly, use 'if product_variations'.
-            for item in product_variations:
-                cart_item.variations.add(item)
-        cart_item.save()
+            cart_item.variations.clear()
+            cart_item.variations.add(*product_variations)
+        cart_item.save()  # ToDo: Remove save() as create(), clear() and add() apply db changes immediately.
 
     return redirect('cart')
 
 
-def remove_from_cart(request, product_id):
+def remove_from_cart(request, product_id, cart_item_id):
     user_cart = Cart.objects.get(cart_id=_get_cart_id(request))
     product = get_object_or_404(Product, pk=product_id)
-    cart_item = CartItem.objects.get(product=product, cart=user_cart)
-    if cart_item.quantity > 1:
-        cart_item.quantity -= 1
-        cart_item.save()
-    else:
-        cart_item.delete()
+    try:
+        cart_item = CartItem.objects.get(product=product, cart=user_cart, id=cart_item_id)
+        if cart_item.quantity > 1:
+            cart_item.quantity -= 1
+            cart_item.save()
+        else:
+            cart_item.delete()
+    except:  # ToDo: Specify the exception.
+        pass
 
     return redirect('cart')
 
 
-def remove_cart_item(request, product_id):
+def remove_cart_item(request, product_id, cart_item_id):
     user_cart = Cart.objects.get(cart_id=_get_cart_id(request))
     product = get_object_or_404(Product, pk=product_id)
-    cart_item = CartItem.objects.get(product=product, cart=user_cart)
+    cart_item = CartItem.objects.get(product=product, cart=user_cart, id=cart_item_id)
     cart_item.delete()
 
     return redirect('cart')
