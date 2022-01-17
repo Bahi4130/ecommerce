@@ -143,3 +143,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MESSAGE_TAGS = {
     messages.ERROR: 'danger',
 }
+
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'bahitester1@gmail.com'
+EMAIL_HOST_PASSWORD = 'bahitest'  # ToDo: Check and implement safe way of storing the password.
+EMAIL_USE_TLS = True
