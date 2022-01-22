@@ -99,6 +99,6 @@ def cart(request, total_price=0, quantity=0, cart_items=None):
     except Cart.DoesNotExist:
         pass
 
-    context = {'total_price': total_price, 'quantity': quantity, 'cart_items': cart_items, 'tax': tax, 'total_price_vat': total_price_vat}
+    context = {'total_price': total_price, 'quantity': quantity, 'cart_items': cart_items, 'tax': tax, 'total_price_vat': total_price_vat}  # ToDo: fix this referencing befor assignment (app fails when accesing a cart section directly before adding any item to cart)
 
     return render(request, 'store/cart.html', context)
