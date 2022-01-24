@@ -87,7 +87,7 @@ def remove_cart_item(request, product_id, cart_item_id):
     return redirect('cart')
 
 
-def cart(request, total_price=0, quantity=0, cart_items=None):
+def cart(request, total_price=0, quantity=0, cart_items=None):  # ToDo: Fix rounding (all around the web - Use Decimal instead of int? Rounding on BE or FE?)
     try:
         user_cart = Cart.objects.get(cart_id=_get_cart_id(request))
         cart_items = CartItem.objects.filter(cart=user_cart, is_active=True)
@@ -102,3 +102,20 @@ def cart(request, total_price=0, quantity=0, cart_items=None):
     context = {'total_price': total_price, 'quantity': quantity, 'cart_items': cart_items, 'tax': tax, 'total_price_vat': total_price_vat}  # ToDo: fix this referencing befor assignment (app fails when accesing a cart section directly before adding any item to cart)
 
     return render(request, 'store/cart.html', context)
+
+
+def checkout(request, total_price=0, quantity=0, cart_items=None):
+    try:
+        user_cart = Cart.objects.get(cart_id=_get_cart_id(request))
+        cart_items = CartItem.objects.filter(cart=user_cart, is_active=True)
+        for item in cart_items:
+            total_price += (item.product.price * item.quantity)
+            quantity += item.quantity
+        tax = (total_price * 0.21)
+        total_price_vat = total_price + tax
+    except Cart.DoesNotExist:
+        pass
+
+    context = {'total_price': total_price, 'quantity': quantity, 'cart_items': cart_items, 'tax': tax, 'total_price_vat': total_price_vat}  # ToDo: fix this referencing befor assignment
+
+    return render(request, 'store/checkout.html', context)
