@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
@@ -89,8 +90,13 @@ def remove_cart_item(request, product_id, cart_item_id):
 
 def cart(request, total_price=0, quantity=0, cart_items=None):  # ToDo: Fix rounding (all around the web - Use Decimal instead of int? Rounding on BE or FE?)
     try:
-        user_cart = Cart.objects.get(cart_id=_get_cart_id(request))
-        cart_items = CartItem.objects.filter(cart=user_cart, is_active=True)
+        tax = 0
+        total_price_vat = 0
+        if request.user.is_authenticated:
+            cart_items = CartItem.objects.filter(user=request.user, is_active=True)
+        else:
+            user_cart = Cart.objects.get(cart_id=_get_cart_id(request))
+            cart_items = CartItem.objects.filter(cart=user_cart, is_active=True)
         for item in cart_items:
             total_price += (item.product.price * item.quantity)
             quantity += item.quantity
@@ -99,11 +105,12 @@ def cart(request, total_price=0, quantity=0, cart_items=None):  # ToDo: Fix roun
     except Cart.DoesNotExist:
         pass
 
-    context = {'total_price': total_price, 'quantity': quantity, 'cart_items': cart_items, 'tax': tax, 'total_price_vat': total_price_vat}  # ToDo: fix this referencing befor assignment (app fails when accesing a cart section directly before adding any item to cart)
+    context = {'total_price': total_price, 'quantity': quantity, 'cart_items': cart_items, 'tax': tax, 'total_price_vat': total_price_vat}
 
     return render(request, 'store/cart.html', context)
 
 
+@login_required(login_url='login')
 def checkout(request, total_price=0, quantity=0, cart_items=None):
     try:
         user_cart = Cart.objects.get(cart_id=_get_cart_id(request))

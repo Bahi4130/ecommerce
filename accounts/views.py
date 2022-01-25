@@ -11,6 +11,8 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
 from accounts.forms import RegistrationForm
 from accounts.models import Account
+from cart.models import Cart, CartItem
+from cart.views import _get_cart_id
 
 
 def register(request):
@@ -55,6 +57,18 @@ def login(request):
         user = auth.authenticate(email=email, password=password)
 
         if user is not None:
+            try:
+                cart = Cart.objects.get(cart_id=_get_cart_id(request))
+                cart_item_exists = CartItem.objects.filter(cart=cart).exists()  # ToDo: This variable is not needed...it could be 'if CartItem.objects.filter().....'
+                if cart_item_exists:
+                    cart_item = CartItem.objects.filter(cart=cart)
+                    for item in cart_item:  # ToDo: What about something like 'cart_item.update(user=user)' - keep signals in mind (save() is not called)
+                        item.user = user
+                        item.save()
+
+            except:  # ToDo: Dont use such a broad exception
+                pass
+
             auth.login(request, user)
             messages.success(request, 'You are now logged in.')
             return redirect('dashboard')
