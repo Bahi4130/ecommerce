@@ -61,11 +61,34 @@ def login(request):
                 cart = Cart.objects.get(cart_id=_get_cart_id(request))
                 cart_item_exists = CartItem.objects.filter(cart=cart).exists()  # ToDo: This variable is not needed...it could be 'if CartItem.objects.filter().....'
                 if cart_item_exists:
-                    cart_item = CartItem.objects.filter(cart=cart)
-                    for item in cart_item:  # ToDo: What about something like 'cart_item.update(user=user)' - keep signals in mind (save() is not called)
-                        item.user = user
-                        item.save()
+                    cart_items = CartItem.objects.filter(cart=cart)
 
+                    product_variations = []
+                    for item in cart_items:
+                        variations = item.variations.all()
+                        product_variations.append(list(variations))
+
+                    cart_items = CartItem.objects.filter(user=user)
+                    existing_variation_list = []
+                    id = []  # ToDo: Rename the variable as this one shadows the built-in one.
+                    for item in cart_items:
+                        existing_variation = item.variations.all()
+                        existing_variation_list.append(list(existing_variation))  # ToDo: Convert queryset to list while getting the existing_variation
+                        id.append(item.id)  # ToDo: Use values_list() to get ids from cart_item queryset.
+
+                    for variation in product_variations:
+                        if variation in existing_variation_list:
+                            index = existing_variation_list.index(variation)  #ToDo: Use enumarate() in here.
+                            item_id = id[index]
+                            item = CartItem.objects.get(id=item_id)
+                            item.quantity += 1
+                            item.user = user
+                            item.save()
+                        else:
+                            cart_items = CartItem.objects.filter(cart=cart)
+                            for item in cart_items:  # ToDo: What about something like 'cart_item.update(user=user)' - keep signals in mind (save() is not called)
+                                item.user = user
+                                item.save()
             except:  # ToDo: Dont use such a broad exception
                 pass
 
