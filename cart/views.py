@@ -142,7 +142,7 @@ def cart(request, total_price=0, quantity=0, cart_items=None):  # ToDo: Fix roun
     try:
         tax = 0
         total_price_vat = 0
-        if request.user.is_authenticated:
+        if request.user.is_authenticated:  # ToDo: Handle redundat code
             cart_items = CartItem.objects.filter(user=request.user, is_active=True)
         else:
             user_cart = Cart.objects.get(cart_id=_get_cart_id(request))
@@ -162,9 +162,14 @@ def cart(request, total_price=0, quantity=0, cart_items=None):  # ToDo: Fix roun
 
 @login_required(login_url='login')
 def checkout(request, total_price=0, quantity=0, cart_items=None):
+    tax = None
+    total_price_vat = None
     try:
-        user_cart = Cart.objects.get(cart_id=_get_cart_id(request))
-        cart_items = CartItem.objects.filter(cart=user_cart, is_active=True)
+        if request.user.is_authenticated:
+            cart_items = CartItem.objects.filter(user=request.user, is_active=True)
+        else:
+            user_cart = Cart.objects.get(cart_id=_get_cart_id(request))
+            cart_items = CartItem.objects.filter(cart=user_cart, is_active=True)
         for item in cart_items:
             total_price += (item.product.price * item.quantity)
             quantity += item.quantity
